@@ -17,7 +17,7 @@ var taskApp *cli.App
 
 func TaskCLI() {
 	taskApp = &cli.App{
-		Name:      "Daniel Ibok",
+		Name:      "task-manager",
 		Version:   "v1.0",
 		Compiled:  time.Now(),
 		Usage:     "Task management tool",
