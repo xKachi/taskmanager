@@ -2,25 +2,26 @@ package cli
 
 import (
 	"fmt"
-	"task-manager/model"
 	"log"
 	"os"
+	"task-manager/model"
 	"time"
 
 	"github.com/gookit/color"
 	"github.com/urfave/cli/v2"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 var taskApp *cli.App
 
 func TaskCLI() {
 	taskApp = &cli.App{
-		Name:     "Task Manager",
-		Version:  "v1.0",
-		Compiled: time.Now(),
-		Usage:    "Task management tool",
+		Name:      "Daniel Ibok",
+		Version:   "v1.0",
+		Compiled:  time.Now(),
+		Usage:     "Task management tool",
+		UsageText: "contrive - task management tool",
 		Commands: []*cli.Command{
 			{
 				Name:    "list",
@@ -28,9 +29,14 @@ func TaskCLI() {
 				Action: func(ctx *cli.Context) error {
 					fmt.Println("List all tasks...")
 					tasks, err := model.GetAllTasks(bson.D{{}})
-					if err != nil {
+					if err != nil && err != mongo.ErrNoDocuments {
 						log.Fatal(err)
 					}
+
+					if tasks == nil {
+						tasks = []bson.M{}
+					}
+
 					model.PrintTasks(tasks)
 					return nil
 				},
@@ -42,6 +48,7 @@ func TaskCLI() {
 							if err != nil {
 								log.Fatal(err)
 							}
+
 							model.PrintTasks(tasks)
 							return nil
 						},
@@ -53,6 +60,7 @@ func TaskCLI() {
 							if err != nil {
 								log.Fatal(err)
 							}
+
 							model.PrintTasks(tasks)
 							return nil
 						},
@@ -63,25 +71,27 @@ func TaskCLI() {
 				Name:    "add",
 				Aliases: []string{"a"},
 				Action: func(ctx *cli.Context) error {
-					if ctx.Args().Len() == 0 {
-						color.Red.Println("Please provide a task title!")
+					if ctx.Args().Len() >= 2 {
+						color.Red.Println("invalid parameters!")
 						return nil
 					}
 
+					// retrieve task from cli
 					title := ctx.Args().First()
 					task := model.Task{
-						ID:        primitive.NewObjectID(),
+						ID:        bson.NewObjectID(),
 						Title:     title,
 						Completed: false,
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					}
 
+					// add new task
 					if err := model.AddTask(task); err != nil {
 						color.Red.Println("Error adding task", err)
-					} else {
-						color.Green.Println("Task added successfully!")
 					}
+
+					color.Green.Println("Task added successfully!")
 					return nil
 				},
 			},
@@ -91,15 +101,17 @@ func TaskCLI() {
 				Action: func(ctx *cli.Context) error {
 					if ctx.Args().Len() == 0 {
 						color.Red.Println("Provide task id to complete task!")
+					} else if ctx.Args().Len() >= 2 {
+						color.Red.Println("invalid parameters!")
 						return nil
 					}
 
 					id := ctx.Args().First()
 					if err := model.CompleteTask(id); err != nil {
 						color.Red.Println("Error completing task", err)
-					} else {
-						color.Green.Println("Task completed successfully")
 					}
+
+					color.Green.Println("Task completed successfully")
 					return nil
 				},
 			},
@@ -108,16 +120,18 @@ func TaskCLI() {
 				Aliases: []string{"rm"},
 				Action: func(ctx *cli.Context) error {
 					if ctx.Args().Len() == 0 {
-						color.Red.Println("Provide task id to delete task!")
+						color.Red.Println("Provide task id to complete task!")
+					} else if ctx.Args().Len() >= 2 {
+						color.Red.Println("invalid parameters!")
 						return nil
 					}
 
 					id := ctx.Args().First()
 					if err := model.DeleteTask(id); err != nil {
-						color.Red.Println("Error deleting task", err)
-					} else {
-						color.Green.Println("Task deleted successfully")
+						color.Red.Println("Error completing task", err)
 					}
+
+					color.Green.Println("Task deleted successfully")
 					return nil
 				},
 			},
